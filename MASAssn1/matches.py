@@ -96,6 +96,16 @@ class Applicant(Person):
         else:
             return False
 
+    def greedyProposal(self, suitor):
+        if suitor in self.ranking:
+            if self.partner is None:
+                self.rank = self.ranking[suitor] + 1
+                return True
+            else:
+                return False
+        else:
+            return False
+
 def parseFile(filename):
     """
     Returns a list of (name,priority_list) pairs.
@@ -132,11 +142,11 @@ def printPairings(employer, applicant):
             print(empl.name, 'is NOT paired')
 
     print('Total Utility ', totalUtility, ' for ', matchCt, ' matchings')
-    print('With Employer Utility:', proposerUtility, ' and Applicant Utility:', proposedUtility)
+    print('With Proposer Utility:', proposerUtility, ' and Proposed Utility:', proposedUtility)
 
 
-def doMatch(msg,fileTuple):
-    print("\n\n"+msg+" working with files ", fileTuple)
+def doMatch(msg,fileTuple, state):
+    print("\n\n"+msg+" working with files ", fileTuple, " with a", state, "approach")
     employerList = parseFile(fileTuple[0])
     employerPref = dict()
     # each item in hr_list is a person and their priority list
@@ -145,7 +155,7 @@ def doMatch(msg,fileTuple):
         employerPref[person] = Employer(person, priority)
     unmatched = list(employerPref.keys())
 
-    # initialize dictionary of appllicants
+    # initialize dictionary of applicants
     applicant_list = parseFile(fileTuple[1])
     applicants = dict()
     # each item in applicant_list is a person and their priority list
@@ -167,26 +177,38 @@ def doMatch(msg,fileTuple):
         #    m has not yet proposed
         if verbose: print(m.name, 'proposes to', who.name)
 
-        if who.evaluateProposal(m.name):
-            if verbose: print('  ', who.name, 'accepts the proposal')
+        if state == "stable":
+            if who.evaluateProposal(m.name):
+                if verbose: print('  ', who.name, 'accepts the proposal')
 
-            if who.partner:
-                # previous partner is getting dumped
-                mOld = employerPref[who.partner]
+                if who.partner:
+                    # previous partner is getting dumped
+                    mOld = employerPref[who.partner]
+                    if verbose:
+                        print('  ', mOld.name, 'gets dumped')
+
+                    mOld.partner = None
+                    mOld.rank = 0
+                    unmatched.append(mOld.name)
+
+                unmatched.pop(0)
+                who.partner = m.name
+                m.partner = who.name
+                m.rank = m.proposalIndex
+            else:
                 if verbose:
-                    print('  ', mOld.name, 'gets dumped')
-
-                mOld.partner = None
-                mOld.rank = 0
-                unmatched.append(mOld.name)
-
-            unmatched.pop(0)
-            who.partner = m.name
-            m.partner = who.name
-            m.rank = m.proposalIndex
+                    print('  ', who.name, 'rejects the proposal')
         else:
-            if verbose:
-                print('  ', who.name, 'rejects the proposal')
+            if who.greedyProposal(m.name):
+                if verbose: print('  ', who.name, 'accepts the proposal')
+                unmatched.pop(0)
+                who.partner = m.name
+                m.partner = who.name
+                m.rank = m.proposalIndex
+
+            else:
+                if verbose:
+                    print('  ', who.name, 'rejects the proposal')
 
         if verbose:
             print("Tentative Pairings are as follows:")
@@ -197,12 +219,20 @@ def doMatch(msg,fileTuple):
     printPairings(employerPref, applicants)
 
 
-files = [("Employers0.txt", "Applicants0.txt", True)] #,
-         #("Employers.txt", "Applicants.txt", False),
-         #("Employers3.txt", "Applicants3.txt", False),
-         #("Employers1.txt", "Applicants1.txt", False),
-         #("Employers2.txt","Applicants2.txt", False)]
+files = [("Employers0.txt", "Applicants0.txt", False),
+        ("Employers.txt", "Applicants.txt", False),
+        ("Employers3.txt", "Applicants3.txt", False)]
+files2 = [("Applicants0.txt", "Employers0.txt", False),
+        ("Applicants.txt", "Employers.txt",  False),
+        ("Applicants3.txt", "Employers3.txt",  False)]
+
 for fileTuple in files:
-    doMatch("Employers propose ", fileTuple)
+    doMatch("Employers propose ", fileTuple, "stable")
+    doMatch("Employers propose ", fileTuple, "greedy")
+
+for fileTuple in files2:
+    doMatch("Applicants propose ", fileTuple, "stable")
+    doMatch("Applicants propose ", fileTuple, "greedy")
+
 
 
