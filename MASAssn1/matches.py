@@ -97,6 +97,10 @@ class Applicant(Person):
             return False
 
     def greedyProposal(self, suitor):
+        """
+        Evaluates a proposal
+        Returns true only if there is no suitor already
+        """
         if suitor in self.ranking:
             if self.partner is None:
                 self.rank = self.ranking[suitor] + 1
@@ -178,6 +182,7 @@ def doMatch(msg,fileTuple, state):
         if verbose: print(m.name, 'proposes to', who.name)
 
         if state == "stable":
+            #the stable algorithm where partners can be dumped
             if who.evaluateProposal(m.name):
                 if verbose: print('  ', who.name, 'accepts the proposal')
 
@@ -199,6 +204,7 @@ def doMatch(msg,fileTuple, state):
                 if verbose:
                     print('  ', who.name, 'rejects the proposal')
         else:
+            #the greedy algorithm where only the first proposal is accepted
             if who.greedyProposal(m.name):
                 if verbose: print('  ', who.name, 'accepts the proposal')
                 unmatched.pop(0)
@@ -219,20 +225,24 @@ def doMatch(msg,fileTuple, state):
     printPairings(employerPref, applicants)
 
 
-files = [("Employers0.txt", "Applicants0.txt", False),
-        ("Employers.txt", "Applicants.txt", False),
-        ("Employers3.txt", "Applicants3.txt", False)]
-files2 = [("Applicants0.txt", "Employers0.txt", False),
-        ("Applicants.txt", "Employers.txt",  False),
-        ("Applicants3.txt", "Employers3.txt",  False)]
+doMatch("Employers propose ", ("Employers0.txt", "Applicants0.txt", True), "stable")
+doMatch("Employers propose ", ("Employers0.txt", "Applicants0.txt", True), "greedy")
+print("-------------------------------------------------------------------------------\n")
+doMatch("Applicants propose ", ("Applicants0.txt", "Employers0.txt", False), "stable")
+doMatch("Applicants propose ", ("Applicants0.txt", "Employers0.txt", False), "greedy")
+print("-------------------------------------------------------------------------------\n")
+doMatch("Employers propose ", ("Employers3.txt", "Applicants3.txt", False), "stable")
+doMatch("Employers propose ", ("Employers3.txt", "Applicants3.txt", False), "greedy")
+print("-------------------------------------------------------------------------------\n")
+doMatch("Applicants propose ", ("Applicants3.txt", "Employers3.txt",  False), "stable")
+doMatch("Applicants propose ", ("Applicants3.txt", "Employers3.txt",  False), "greedy")
+print("-------------------------------------------------------------------------------\n")
+doMatch("Employers propose ", ("Employers.txt", "Applicants.txt", False), "stable")
+doMatch("Employers propose ", ("Employers.txt", "Applicants.txt", False), "greedy")
+print("-------------------------------------------------------------------------------\n")
+doMatch("Applicants propose ", ("Applicants.txt", "Employers.txt", False), "stable")
+doMatch("Applicants propose ", ("Applicants.txt", "Employers.txt", False), "greedy")
 
-for fileTuple in files:
-    doMatch("Employers propose ", fileTuple, "stable")
-    doMatch("Employers propose ", fileTuple, "greedy")
-
-for fileTuple in files2:
-    doMatch("Applicants propose ", fileTuple, "stable")
-    doMatch("Applicants propose ", fileTuple, "greedy")
 
 
 
