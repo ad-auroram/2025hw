@@ -4,6 +4,8 @@ For me, it is easier to write the min cost max flow using adjacency matrices, so
 Feel free to do it your way.
 """
 
+from Stable import doMatch
+
 class Graph:
 
     # An input edge has three components (startNode, endNode, ranking).
@@ -47,6 +49,7 @@ class Graph:
                         self.edges.append((name, priorities[i], i + 1, 1))
             f.close()
         proposerCt = len(self.vertices) - 1
+        self.proposer_ct = proposerCt
         # repeat for other file preferences,  Notice, I switch the order of the nodes, so the proposer is always first.
         with open(file_tuple[1]) as f:
             for line in f:
@@ -108,14 +111,14 @@ class Graph:
 
     # You will need to modify this so it calls Bellman-Ford repeatedly.
     def do_flow(self):
-        print("Vertices are: ")
-        print(self.vertices)
-        print("Edges are: ")
-        print(self.edges)
-        self.print2d_array("adjacency", self.adjM)
-        self.print2d_array("residual", self.residual)
-        self.print2d_array("cost", self.cost_array)
-        self.BellmanFord(0, len(self.vertices) - 1)
+        src, sink = 0, len(self.vertices) - 1
+        flow, cost = self.min_cost_max_flow(src, sink)
+        print(f"Max flow = {flow}, Min cost = {cost}")
+
+        matching = self.extract_matching()
+        print("Matching result:")
+        for emp, app in matching:
+            print(f"  {emp} ↔ {app}")
 
     # utility function used to print the matrix dist with label
     def print_array(self, label, dist):
@@ -145,13 +148,53 @@ class Graph:
                     if self.residual[u][v] > 0 and dist[u] != 9999 and dist[u] + self.cost_array[u][v] < dist[v]:
                         dist[v] = dist[u] + self.cost_array[u][v]
                         pred[v] = u
-
-        self.print_array("Predecessor", pred)
-        self.print_array("Cost", dist)
+                        
+        self.pred = pred
+        self.dist = dist
+        #self.print_array("Predecessor", pred)
+        #self.print_array("Cost", dist)
+        
         return pred[sink] >= 0
+
+    def min_cost_max_flow(self, src, sink):
+        flow = 0
+        cost = 0
+        while self.BellmanFord(src, sink):
+            v = sink
+            path_flow = float("inf")
+            while v != src:
+                u = self.pred[v]
+                if u == -1:
+                    path_flow = 0
+                    break
+                path_flow = min(path_flow, self.residual[u][v])
+                v = u
+            if path_flow == 0 or path_flow == float("inf"):
+                break
+            v = sink
+            while v != src:
+                u = self.pred[v]
+                self.residual[u][v] -= path_flow
+                self.residual[v][u] += path_flow
+                cost += self.cost_array[u][v] * path_flow
+                v = u
+            flow += path_flow
+        return flow, cost
+
+    def extract_matching(self):
+        matches = []
+        src, sink = 0, len(self.vertices) - 1
+        for u in range(1, self.proposer_ct + 1):
+            for v in range(self.proposer_ct + 1, sink):
+                if self.adjM[u][v] > 0 and self.residual[u][v] == 0:
+                    matches.append((self.vertices[u], self.vertices[v]))
+        return matches
 
     # create an adjacency matrix from men preferencese and women preferences
     def __init__(self, fileTuple):
+        self.proposer_ct = None
+        self.dist = None
+        self.pred = None
         self.vertices = []
         self.adjM = []
         self.vertex_ct = 0
@@ -163,8 +206,17 @@ class Graph:
         self.create_graph(fileTuple)
 
 
-files = [("Employers1.txt","Applicants1.txt", True)]
+doMatch("Employers propose ", ("Employers1.txt", "Applicants1.txt", False), "stable")
+doMatch("Applicants propose ", ("Applicants1.txt", "Employers1.txt", False), "stable")
+print("-------------------------------------------------------------------------------\n")
+doMatch("Employers propose ", ("Employers2.txt", "Applicants2.txt", False), "stable")
+doMatch("Applicants propose ", ("Applicants2.txt", "Employers2.txt", False), "stable")
+print("-------------------------------------------------------------------------------\n")
+
+files = [("Employers1.txt","Applicants1.txt", True), ("Employers2.txt","Applicants2.txt", True)]
 for fileTuple in files:
     print(fileTuple)
     g=Graph(fileTuple)
     g.do_flow()
+    print("-------------------------------------------------------------------------------\n")
+
