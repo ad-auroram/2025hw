@@ -150,7 +150,6 @@ class Graph:
                         pred[v] = u
                         
         self.pred = pred
-        self.dist = dist
         #self.print_array("Predecessor", pred)
         #self.print_array("Cost", dist)
         
@@ -193,7 +192,6 @@ class Graph:
     # create an adjacency matrix from men preferencese and women preferences
     def __init__(self, fileTuple):
         self.proposer_ct = None
-        self.dist = None
         self.pred = None
         self.vertices = []
         self.adjM = []
@@ -206,16 +204,21 @@ class Graph:
         self.create_graph(fileTuple)
 
 
-doMatch("Employers propose ", ("Employers1.txt", "Applicants1.txt", False), "stable")
-doMatch("Applicants propose ", ("Applicants1.txt", "Employers1.txt", False), "stable")
-print("-------------------------------------------------------------------------------\n")
-doMatch("Employers propose ", ("Employers2.txt", "Applicants2.txt", False), "stable")
-doMatch("Applicants propose ", ("Applicants2.txt", "Employers2.txt", False), "stable")
-print("-------------------------------------------------------------------------------\n")
 
-files = [("Employers1.txt","Applicants1.txt", True), ("Employers2.txt","Applicants2.txt", True)]
+files = [
+    ("Employers1.txt", "Applicants1.txt", False),
+    ("Employers2.txt", "Applicants2.txt", False),
+    ("Employers3.txt", "Applicants3.txt", False),
+    ("Employers4.txt", "Applicants4.txt", False),
+    ]
 for fileTuple in files:
     print(fileTuple)
+    doMatch("Employers propose ", fileTuple, "stable")
+    fileList = list(fileTuple)
+    fileList[0], fileList[1] = fileList[1], fileList[0]
+    fileTuple= tuple(fileList)
+    doMatch("Applicants propose ", fileTuple, "stable")
+    print("\n")
     g=Graph(fileTuple)
     g.do_flow()
     print("-------------------------------------------------------------------------------\n")

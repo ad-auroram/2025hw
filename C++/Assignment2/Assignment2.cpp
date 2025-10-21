@@ -1,6 +1,9 @@
 #include <iostream>
 #include <random>
 #include <format>
+#include <cstdint>
+#include <cmath>
+#include <vector>
 
 class DistributionPair
 {
@@ -16,6 +19,171 @@ class DistributionPair
     std::uint32_t maxValue;
     std::uint32_t count;
 };
+
+std::vector<DistributionPair> generateUniformDistribution(std::uint32_t howMany, std::uint32_t min, std::uint32_t max, std::uint8_t numberBins)
+{
+    std::vector<DistributionPair> result;
+
+    if (min > max || numberBins == 0) {
+        return result;
+    }
+
+    std::uint32_t range = max - min+1;
+    std::uint32_t binSize = range / numberBins;
+
+    for (std::uint8_t i = 0; i < numberBins; ++i) {
+        std::uint32_t binMin = min + i * binSize;
+        std::uint32_t binMax = (i == numberBins - 1) ? max : binMin + binSize - 1;
+        result.emplace_back(binMin, binMax);
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<std::uint32_t> dist(min, max - 1);
+
+    for (std::uint32_t i = 0; i < howMany; ++i) {
+        std::uint32_t value = dist(gen);
+        std::uint8_t binIndex = (value - min) / binSize;
+        if (binIndex >= numberBins) binIndex = numberBins - 1;
+        ++result[binIndex].count;
+    }
+
+    return result;
+}
+
+std::vector<DistributionPair> generateNormalDistribution(std::uint32_t howMany, float mean, float stdev, std::uint8_t numberBins)
+{
+    std::vector<DistributionPair> result;
+
+    if (numberBins == 0 || howMany == 0 || stdev <= 0.0f) {
+        return result;
+    }
+
+    int rangeMin = static_cast<int>(std::floor(mean - 4 * stdev));
+    int rangeMax = static_cast<int>(std::ceil(mean + 4 * stdev));
+
+    while ((rangeMax - rangeMin) % numberBins != 0) {
+        --rangeMax;
+    }
+
+    int totalRange = rangeMax - rangeMin;
+    int binSize = totalRange / numberBins;
+
+    for (int i = 0; i < numberBins; ++i) {
+        std::uint32_t binStart = rangeMin + i * binSize;
+        std::uint32_t binEnd = std::min(binStart + binSize - 1, static_cast<std::uint32_t>(rangeMax));
+        result.emplace_back(binStart, binEnd);
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::normal_distribution<float> dist(mean, stdev);
+
+
+    for (std::uint32_t i = 0; i < howMany; ++i) {
+        float value = dist(gen);
+        int intVal = static_cast<int>(std::floor(value));
+
+        int binIndex;
+        if (intVal < rangeMin) {
+            binIndex = 0;
+        }
+        else if (intVal >= rangeMax) {
+            binIndex = numberBins - 1;
+        }
+        else {
+            binIndex = (intVal - rangeMin) / binSize;
+        }
+
+        if (binIndex >= 0 && binIndex < static_cast<int>(result.size())) {
+            ++result[binIndex].count;
+        }
+    }
+
+    return result;
+}
+
+std::vector<DistributionPair> generatePoissonDistribution(std::uint32_t howMany, std::uint8_t howOften, std::uint8_t numberBins)
+{
+    std::vector<DistributionPair> result;
+
+    if (numberBins == 0 || howMany == 0 || howOften == 0) {
+        return result;
+    }
+
+    for (std::uint8_t i = 0; i < numberBins; ++i) {
+        result.emplace_back(i, i);
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::poisson_distribution<std::uint32_t> dist(howOften);
+
+    for (std::uint32_t i = 0; i < howMany; ++i) {
+        std::uint32_t value = dist(gen);
+        std::uint8_t binIndex;
+
+        if (value < 0) {
+            binIndex = 0;
+        }
+        else if (value >= numberBins) {
+            binIndex = numberBins - 1;
+        }
+        else {
+            binIndex = static_cast<std::uint8_t>(value);
+        }
+        ++result[binIndex].count;
+    }
+
+    return result;
+}
+
+void plotDistribution(std::string title, const std::vector<DistributionPair>& distribution, const std::uint8_t maxPlotLineSize)
+{
+    if (distribution.empty() || maxPlotLineSize == 0) {
+        return;
+    }
+
+    std::uint32_t maxCount = 0;
+    for (const auto& bin : distribution) {
+        if (bin.count > maxCount) {
+            maxCount = bin.count;
+        }
+    }
+
+    if (maxCount == 0) {
+        maxCount = 1;
+    }
+
+    std::cout << std::format("--- {} ---\n", title);
+
+    for (const auto& bin : distribution) {
+        std::uint8_t numStars = static_cast<std::uint8_t>(
+            std::round(static_cast<float>(bin.count) / maxCount * maxPlotLineSize)
+        );
+
+        std::string stars(numStars, '*');
+
+        std::cout << std::format("[{:3}, {:3}] : {}\n", bin.minValue, bin.maxValue, stars);
+    }
+}
+
+void test();
+int main()
+{
+    auto uniform = generateUniformDistribution(100000, 0, 79, 40);
+    plotDistribution("--- Uniform ---", uniform, 80);
+
+    auto normal = generateNormalDistribution(100000, 50, 5, 40);
+    plotDistribution("--- Normal ---", normal, 80);
+
+    auto poisson = generatePoissonDistribution(100000, 6, 40);
+    plotDistribution("--- Poisson ---", poisson, 80);
+
+    test();
+}
+
+
 
 // ------------------------------------------------------------------
 //
@@ -163,13 +331,4 @@ void test()
     testPoissonDistribution();
 
     std::cout << "\n\n";
-}
-
-void main()
-{
-    std::vector<DistributionPair> generateUniformDistribution(std::uint32_t howMany, std::uint32_t min, std::uint32_t max, std::uint8_t numberBins);
-    std::vector<DistributionPair> generateNormalDistribution(std::uint32_t howMany, float mean, float stdev, std::uint8_t numberBins);
-    std::vector<DistributionPair> generatePoissonDistribution(std::uint32_t howMany, std::uint8_t howOften, std::uint8_t numberBins);
-
-    void plotDistribution(std::string title, const std::vector<DistributionPair>& distribution, const std::uint8_t maxPlotLineSize);
 }

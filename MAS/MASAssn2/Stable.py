@@ -80,19 +80,6 @@ class Applicant(Person):
         else:
             return False
 
-    def greedyProposal(self, suitor):
-        """
-        Evaluates a proposal
-        Returns true only if there is no suitor already
-        """
-        if suitor in self.ranking:
-            if self.partner is None:
-                self.rank = self.ranking[suitor] + 1
-                return True
-            else:
-                return False
-        else:
-            return False
 
 def parseFile(filename):
     """
@@ -188,31 +175,10 @@ def doMatch(msg,fileTuple, state):
             else:
                 if verbose:
                     print('  ', who.name, 'rejects the proposal')
-        else:
-            #the greedy algorithm where only the first proposal is accepted
-            if who.greedyProposal(m.name):
-                if verbose: print('  ', who.name, 'accepts the proposal')
-                unmatched.pop(0)
-                who.partner = m.name
-                m.partner = who.name
-                m.rank = m.proposalIndex
-
-            else:
-                if verbose:
-                    print('  ', who.name, 'rejects the proposal')
 
         if verbose:
             print("Tentative Pairings are as follows:")
             printPairings(employerPref, applicants)
 
-    # we should be done
     print("Final Pairings are as follows:")
     printPairings(employerPref, applicants)
-
-'''
-doMatch("Employers propose ", ("Employers1.txt", "Applicants1.txt", False), "stable")
-doMatch("Applicants propose ", ("Applicants1.txt", "Employers1.txt", False), "stable")
-print("-------------------------------------------------------------------------------\n")
-doMatch("Employers propose ", ("Employers2.txt", "Applicants2.txt", False), "stable")
-doMatch("Applicants propose ", ("Applicants2.txt", "Employers2.txt", False), "stable")
-'''
