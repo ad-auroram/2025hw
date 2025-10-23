@@ -7,22 +7,18 @@
 #include <format>
 
 
-void initializeRawArrayFromStdArray(const SourceArray& source, int dest[]){
-    //This function accepts an std::array and copies its elements into a raw array.  
+void initializeRawArrayFromStdArray(const SourceArray& source, int dest[]){  
     std::copy(source.begin(), source.end(), dest);
 }
 
 
-void organPipeStdArray(SourceArray& data){
-    //This function re-organizes the values in the data array to have an organ pipe structure.  
+void organPipeStdArray(SourceArray& data){  
     SourceArray temp;
     std::size_t n = data.size();
 
-    // First half increases
     for (std::size_t i = 0; i < n / 2; ++i)
         temp[i] = data[i];
 
-    // Second half decreases
     for (std::size_t i = n / 2; i < n; ++i)
         temp[i] = data[n - 1 - i];
 
@@ -33,7 +29,6 @@ static void printResult(const std::string& label, double avgMs) {
     std::cout << std::format("        {:<16}: {:>6.1f} ms\n", label + " Time", avgMs);
 }
 
-//Each of the evaluateX functions time and report how long it takes to sort each of the array types HOW_MANY_TIMES  
 void evaluateRawArray(const SourceArray& random, const SourceArray& sorted, const SourceArray& reversed, const SourceArray& organPipe, const SourceArray& rotated){
     const std::pair<std::string, const SourceArray*> sources[] = {
         {"Random",     &random},
@@ -48,10 +43,10 @@ void evaluateRawArray(const SourceArray& random, const SourceArray& sorted, cons
         for (std::uint8_t r = 0; r < HOW_MANY_TIMES; ++r) {
 
                 int work[HOW_MANY_ELEMENTS];
-                initializeRawArrayFromStdArray(*src, work);        // each loop, re-initialize an raw array work from src
+                initializeRawArrayFromStdArray(*src, work);
 
                 auto start = std::chrono::steady_clock::now();
-                std::sort(std::begin(work), std::end(work));      // timed, only for sorting
+                std::sort(std::begin(work), std::end(work));
                 auto stop  = std::chrono::steady_clock::now();
 
                 total += std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
