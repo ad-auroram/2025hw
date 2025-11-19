@@ -5,17 +5,63 @@ CAND = 0  # subscript of list which represents the candidate
 SCORE = 1  # subscript of list which represents the score of the candidate
 PLACE = 2  # subscript of list which represents the ranking, lowest is best
 
+def tallyVotes(candidates, ordered, eliminated):
+    tally = {c: 0 for c in range(1, candidates + 1)}
+    for vote in ordered:
+        # find first non-eliminated candidate in that ranked vote
+        for candidate in vote:
+            if candidate not in eliminated:
+                tally[candidate] += 1
+                break
+    print(tally)
+    return tally
 
-def ranked_winner(names, voters, ordered):
+
+def ranked_winner(names, voters, candidates, ordered):
     # pass in all the voters and rankings
     # iterate through the rankings and keep track of votes to each (list?)
     # only look at first choice unless there is a tie, then count up last choices for those two
     # for the loser, remove that first option
     # count through again until there is one left
+    print("\nRanked choice voting:")
+    eliminated =[]
+    while True:
+        tally = tallyVotes(candidates, ordered, eliminated)
+        remaining = {c: v for c, v in tally.items() if c not in eliminated}
+        lowest_candidate = min(remaining, key=remaining.get)
+        print(f"Candidate {lowest_candidate} is eliminated")
+        eliminated.append(lowest_candidate)
+        if len(remaining) == 1:
+            winner = next(iter(remaining.keys()))
+            print(f"Winner is candidate {winner}\n")
+            return winner
+        
 
-    for vote in ordered:
-        print(vote)
-    pass
+def social_welfare(names, ranking, voters, winner):
+    cTotal = 0
+    oTotal = 0
+
+    for i in range(voters):
+        name = names[i]
+
+        for cand, score, rank in ranking[i]:
+            if rank == 1:
+                firstScore = score
+                firstRank = rank
+
+            if cand == winner:
+                winnerRank = rank
+                winnerScore = score
+
+        cUtility= abs(round(firstScore-winnerScore, 2))
+        oUtility = abs(firstRank-winnerRank)
+        cTotal+=cUtility
+        oTotal += oUtility
+
+        print(f'{name}utility: {cUtility}, {oUtility} ')
+
+    print(f'Social Welfare (Cardinal Utility): {round(cTotal,2)}')
+    print(f'Social Welfare (Ordinal Utility): {oTotal}')
 
 
 def print_connections(names, c, voters, candidates):
@@ -63,7 +109,8 @@ def create_voting(voters, candidates):
             candidate = s[v][CAND] - 1  # which candidate has rank v+1
             candidateRanking[i][candidate][PLACE] = v + 1
     print_rankings(names, candidateRanking, voters, candidates, ordered)
-    ranked_winner(names, voters, ordered)
+    winner = ranked_winner(names, voters, candidates, ordered)
+    social_welfare(names, candidateRanking, voters, winner)
 
 
 # Press the green button in the gutter to run the script.
