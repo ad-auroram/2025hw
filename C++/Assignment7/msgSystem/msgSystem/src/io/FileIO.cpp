@@ -27,17 +27,42 @@ void FileIO::close()
 
 std::string FileIO::readOne() 
 {
+    if (!in.is_open()) {
+        return "";
+    }
+
+    std::string line;
+
+    while (std::getline(in, line)) {
+        auto notspace = [](unsigned char c){ return !std::isspace(c); };
+
+        line.erase(line.begin(),
+        std::find_if(line.begin(), line.end(), notspace));
+
+        line.erase(std::find_if(line.rbegin(), line.rend(), notspace).base(), line.end());
+
+        if (!line.empty())
+            return line;
+    }
+
     return "";
 }
 
 void FileIO::writeOne(const std::string& frame) 
 { 
-    (void)frame;
-    return;
+    if (!out.is_open()) {
+        throw std::runtime_error("FileIO: output file is not open");
+    }
+
+    out << frame << "\n";
+    out.flush();
 }
 
 
 std::string FileIO::getOutputPath() 
 {
-    return "";
+    fs::path p(in_path);
+    fs::path dir = p.parent_path();
+
+    return (dir / "output.txt").string();
 }
