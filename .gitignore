@@ -53,6 +53,9 @@ desktop.ini
 *.png
 *.docx
 *.pyc
+*.pdf
+*.mp4
+*.h
 
 # ---- Testing / Coverage ----
 Testing/
